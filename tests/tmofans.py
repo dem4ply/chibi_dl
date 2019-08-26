@@ -66,6 +66,6 @@ class Test_tmofans:
 class Test_kimetsu_no_yaiba( Test_tmofans, VCRTestCase ):
     def setUp( self ):
         super().setUp()
-        self.site = TMO_fans(
-            url='https://tmofans.com/library/manga/15125/Kimetsu-no-Yaiba'
-        )
+        self.site = TMO_fans()
+        self.site.append(
+            'https://tmofans.com/library/manga/15125/Kimetsu-no-Yaiba' )
