@@ -54,17 +54,26 @@ downlaod the serie in 720p o 1080p
 
 .. code-block:: bash
 
-	chibi_dl -q 720 --user user -p password "https://www.crunchyroll.com/es/yuruyuri" /path/to/save/serie
+	chibi_dl -q 720 --user $user -p $password -o /path/to/save/serie "https://www.crunchyroll.com/es/yuruyuri"
 
 
 if you are ok with the lower resolution you not need the user and password
 
 .. code-block:: bash
 
-	chibi_dl -q 240 "https://www.crunchyroll.com/es/yuruyuri" /path/to/save/serie
+	chibi_dl -q 240 -o /path/to/save/serie "https://www.crunchyroll.com/es/yuruyuri"
 
 in the case of tmo fans
 
 .. code-block:: bash
 
-	chibi_dl "https://tmofans.com/library/manga/13698/komi-san-wa-komyushou-desu" /path/to/save/serie
+	chibi_dl -o /path/to/save/serie "https://tmofans.com/library/manga/13698/komi-san-wa-komyushou-desu"
+
+for get all the list of pending, follow and read in tmo fans
+need the user and password for do the login and retrive the list of links
+and donwload all the series
+
+.. code-block:: bash
+
+	chibi_dl --only_print --only_links -p $PASSWORD -u $USER https://tmofans.com/profile/read https://tmofans.com/profile/pending  https://tmofans.com/profile/follow > links_of_mangas
+	chibi_dl -o /path/to/save/series @links_of_mangas
