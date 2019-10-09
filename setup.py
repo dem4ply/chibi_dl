@@ -3,20 +3,20 @@ try:
 except:
     from distutils.core import setup, find_packages
 
-# here = os.path.abspath( os.path.dirname( __file__ ) )
-# README = open(os.path.join( here, 'README.rst' ) ).read()
+here = os.path.abspath( os.path.dirname( __file__ ) )
+README = open(os.path.join( here, 'README.rst' ) ).read()
 
 setup(
     name='chibi_dl',
     version='0.0.1',
     description='',
-    # long_description=README,
+    long_description=README,
     license='',
     author='dem4ply',
     author_email='',
     packages=find_packages(),
     install_requires=[
-        'chibi>=0.4.9', 'm3u8>=0.3.12',
+        'chibi>=0.5.3', 'm3u8>=0.3.12',
         'selenium>=3.141.0', 'beautifulsoup4>=4.8.0',
         'ffmpeg-python>=0.2.0', 'pymkv>=1.0.5', 'pycountry>=19.8.18',
     ],
