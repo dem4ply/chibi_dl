@@ -6,6 +6,7 @@ import collections
 import email
 import getpass
 import io
+import itertools
 import optparse
 import os
 import re
@@ -15,7 +16,6 @@ import socket
 import struct
 import subprocess
 import sys
-import itertools
 import xml.etree.ElementTree
 
 
@@ -2760,8 +2760,7 @@ else:
     compat_kwargs = lambda kwargs: kwargs
 
 
-compat_numeric_types = ((int, float, long, complex) if sys.version_info[0] < 3
-                        else (int, float, complex))
+compat_numeric_types = ( int, float, complex )
 
 
 if sys.version_info < (2, 7):

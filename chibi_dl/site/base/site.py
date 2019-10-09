@@ -1,8 +1,9 @@
 import logging
+import time
 
 import cfscrape
 import requests
-import time
+
 from .exceptions import Max_retries_reach
 
 
@@ -49,7 +50,6 @@ class Site:
     def user_agent( self, value ):
         self.session.headers[ 'User-Agent' ] = value
 
-
     def build_session( self ):
         self._session = requests.session()
         self._session = cfscrape.create_scraper( self._session )
@@ -60,15 +60,24 @@ class Site:
                 'Chrome/56.0.2924.87 Safari/537.36',
         } )
 
-    def get( self, *args, delay=16, retries=0, max_retries=5, **kw ):
+    def get(
+            self, *args, delay=16, retries=0, max_retries=5,
+            ignore_status_code=None, **kw ):
         response = self.session.get( *args, **kw )
-        if response.status_code == 429:
+        if ignore_status_code and response.status_code in ignore_status_code:
+            logger.warning( (
+                "se recibio {} se ignora" ).format( response.status_code, ) )
+            return response
+        if response.status_code not in [ 200 ]:
             if retries >= max_retries:
                 raise Max_retries_reach
             logger.warning( (
-                "se recibio 429 ( to many request ) esperando {} segundos "
-                "en {}"
-                ).format( delay, args[0] ) )
+                "se recibio {} ( {} ) esperando {} segundos "
+                "en {}" ).format(
+                    response.status_code,
+                    requests.status_codes._codes[ response.status_code ][0],
+                    delay, args[0], ) )
             time.sleep( delay )
-            return self.get( *args, delay=delay ** 2, retries=retries+1, **kw )
+            return self.get(
+                *args, delay=delay ** 2, retries=retries + 1, **kw )
         return response

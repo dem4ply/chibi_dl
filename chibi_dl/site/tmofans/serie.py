@@ -1,6 +1,5 @@
 import itertools
 import logging
-import time
 
 from bs4 import BeautifulSoup
 from chibi.file.temp import Chibi_temp_path
@@ -11,14 +10,13 @@ from chibi_dl.site.base.site import Site
 
 logger = logging.getLogger( "chibi_dl.sites.tmo_fans.serie" )
 
+
 class Serie( Site ):
     def __init__( self, url, *args, **kw ):
         super().__init__( url, *args, **kw )
 
     def download( self, path ):
-        serie_path = path + self.name
-        serie_path = serie_path.replace( "?", "" )
-        serie_path = serie_path.replace( ":", "" )
+        serie_path = ( path + self.name ).made_safe()
         serie_path.mkdir()
 
         logger.info( "iniciando descarga de la serie '{}' de {}".format(
@@ -26,17 +24,18 @@ class Serie( Site ):
         for episode in self.episodes:
             episode_path = serie_path + episode.file_name
             if ( episode_path.exists ):
-                logger.info(
-                    ( "ignorando el episodio {} se encontro "
+                logger.info( (
+                    "ignorando el episodio {} se encontro "
                     "en el destino" ).format( episode.title ) )
                 continue
             downlaod_folder = Chibi_temp_path()
             try:
                 episode.download( downlaod_folder )
             except Exception as e:
-                logger.exception( "asdfsadf" )
-                import pdb
-                pdb.post_mortem( e.__traceback__ )
+                logger.exception(
+                    "paso un problema cuando intento de "
+                    "descargar el episodio" )
+                continue
             episode.compress( serie_path, downlaod_folder )
 
     @property
@@ -75,12 +74,14 @@ class Serie( Site ):
             self.load_one_shot( soup )
             return
         else:
-            chapter_container = soup.find( "div", { 'class': "card chapters" } )
+            chapter_container = soup.find(
+                "div", { 'class': "card chapters" } )
             chapter_container_hidden = chapter_container.find(
                 "div", id="chapters-collapsed" )
 
             if not chapter_container_hidden:
-                chapters = chapter_container.ul.find_all( "li", recursive=False )
+                chapters = chapter_container.ul.find_all(
+                    "li", recursive=False )
             else:
                 chapters = itertools.chain(
                     chapter_container.ul.find_all( "li", recursive=False ),

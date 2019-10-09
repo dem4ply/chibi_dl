@@ -8,10 +8,10 @@ from pymkv import MKVFile, MKVTrack
 from .exceptions import Cannot_find_subtitles, Episode_not_have_media
 from .site import Site
 from .subtitles import Subtitle
-from subprocess import Popen, PIPE
 
 
 logger = logging.getLogger( "chibi_dl.sites.crunchyroll.episode" )
+
 
 class Episode( Site ):
     def __init__( self, url, user, password, *args, **kw ):
@@ -44,11 +44,20 @@ class Episode( Site ):
 
     @property
     def serie_title( self ):
-        return self.media_metadata.series_title
+        title = self.media_metadata.series_title
+        title = title.replace( "/", " " )
+        return title
 
     @property
     def number( self ):
-        return int( self.media_metadata.episode_number )
+        if self.media_metadata.episode_number:
+            try:
+                return int( self.media_metadata.episode_number )
+            except ValueError:
+                try:
+                    return float( self.media_metadata.episode_number )
+                except ValueError:
+                    return self.media_metadata.episode_number
 
     @property
     def title( self ):
@@ -56,9 +65,12 @@ class Episode( Site ):
 
     @property
     def name( self ):
-        title = self.serie_title.replace( 'Season ', 'S' )
-        return "{serie_title} - {number}".format(
-            serie_title=title, number=self.number )
+        title = self.serie_title.replace( 'Season ', 'S' ).made_safe()
+        if self.number:
+            return "{serie_title} - {number}".format(
+                serie_title=title, number=self.number )
+        else:
+            return "{serie_title}".format( serie_title=title )
 
     @property
     def file_name( self ):
@@ -74,7 +86,7 @@ class Episode( Site ):
 
     @property
     def media_metadata( self ):
-        return self.info.onfig_Config.efault_preload.media_metadata
+        return self.info.config_Config.default_preload.media_metadata
 
     @property
     def info( self ):
@@ -131,7 +143,7 @@ class Episode( Site ):
         try:
             return self._playlist
         except AttributeError:
-            stream_info = self.info.onfig_Config.efault_preload.stream_info
+            stream_info = self.info.config_Config.default_preload.stream_info
             if 'error' in stream_info:
                 raise Episode_not_have_media( stream_info )
             stream_info.file
@@ -169,8 +181,8 @@ class Episode( Site ):
 
         info = loads( page.text )
         self._info = info
-        if 'subtitles' in info.onfig_Config.efault_preload:
-            subtitles = info.onfig_Config.efault_preload.subtitles.subtitle
+        if 'subtitles' in info.config_Config.default_preload:
+            subtitles = info.config_Config.default_preload.subtitles.subtitle
             self.load_subtitles( subtitles )
         else:
             try:
@@ -202,8 +214,8 @@ class Episode( Site ):
         page = self.get( url=info_url, )
 
         info = loads( page.text )
-        if 'subtitles' in info.onfig_Config.efault_preload:
-            subtitles = info.onfig_Config.efault_preload.subtitles.subtitle
+        if 'subtitles' in info.config_Config.default_preload:
+            subtitles = info.config_Config.default_preload.subtitles.subtitle
             self.load_subtitles( subtitles )
         else:
             raise Cannot_find_subtitles

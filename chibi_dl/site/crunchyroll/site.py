@@ -86,7 +86,7 @@ class Crunchyroll( Site ):
                 'login_form[_token]': csrf_token,
             }
 
-            login_post = self.session.post(
+            self.session.post(
                 url=login_url, data=payload, headers=headers,
                 cookies=initial_cookies)
 

@@ -2,7 +2,7 @@ ignore_test = test/**,venv/*,setup.py
 
 test:: test_unit report
 
-modules = chibi
+modules = chibi_dl
 
 style_test: flakes pep8
 

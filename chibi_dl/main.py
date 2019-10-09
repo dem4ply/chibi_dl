@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
+import logging
+import random
+from argparse import ArgumentParser
 
 from chibi.file import Chibi_path
-from chibi.command.nmap import nmap
-from chibi.command.network import ip_addr
-from argparse import ArgumentParser
-from chibi.atlas import Chibi_atlas
-from chibi.command.qr import wifi
-from chibi.command.nmcli import connection
-import logging
-
 
 from chibi_dl.site import Site
 
-logger_formarter = '%(levelname)s %(name)s %(asctime)s %(message)s'
 
+logger_formarter = '%(levelname)s %(name)s %(asctime)s %(message)s'
 
 
 parser = ArgumentParser(
@@ -47,6 +42,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--random", dest="random", action="store_true",
+    help="procesa las urls en un orden aleatorio"
+)
+
+parser.add_argument(
     "--log_level", dest="log_level", default="INFO",
     help="nivel de log",
 )
@@ -62,6 +62,8 @@ def main():
     site = Site(
         user=args.user, password=args.password,
         quality=args.quality )
+    if args.random:
+        random.shuffle( args.sites )
     site.append( *args.sites )
 
     if args.only_print:

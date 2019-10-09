@@ -12,9 +12,8 @@ from .external.utils import obfuscate_key, bytes_to_intlist, intlist_to_bytes
 from .site import Site
 
 
-#from .external.aes import
-
 logger = logging.getLogger( "chibi_dl.sites.crunchyroll.subtitle" )
+
 
 class Subtitle( Site ):
     def __init__( self, url, user, password, *args, **kw ):
@@ -103,10 +102,12 @@ class Subtitle( Site ):
         output += 'WrapStyle: %s\n' % self.data['wrap_style']
         output += 'PlayResX: %s\n' % self.data['play_res_x']
         output += 'PlayResY: %s\n' % self.data['play_res_y']
-        output += """
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-"""
+        output += "[V4+ Styles]\n"
+        output += (
+            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour,"
+            " OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,"
+            " ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow,"
+            " Alignment, MarginL, MarginR, MarginV, Encoding" )
         if not isinstance( self.data.styles.style, list ):
             self.data.styles.style = [ self.data.styles.style ]
         for style in self.data.styles.style:

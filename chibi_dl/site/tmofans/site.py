@@ -1,16 +1,14 @@
 import logging
-import itertools
 import time
 
 import requests
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-from .exceptions import Cannot_pass_cloud_flare
+from .exceptions import Cannot_pass_cloud_flare, Cannot_login
 from .regex import re_show, re_follow, re_pending, re_read
 from chibi_dl.site.base.site import Site as Site_base
-from bs4 import BeautifulSoup
-from .exceptions import Cannot_login
 
 
 logger = logging.getLogger( "chibi_dl.sites.tmo_fans" )
@@ -149,7 +147,6 @@ class TMO_fans( Site ):
             raise Cannot_login
         else:
             self._login_ok = True
-
 
     def get_all_follow( self ):
         page_number = 0

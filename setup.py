@@ -18,7 +18,7 @@ setup(
     install_requires=[
         'chibi>=0.4.9', 'm3u8>=0.3.12',
         'selenium>=3.141.0', 'beautifulsoup4>=4.8.0',
-        'ffmpeg-python>=0.2.0', 'pymkv>=1.0.5', 'pycountry>=19.8.18'
+        'ffmpeg-python>=0.2.0', 'pymkv>=1.0.5', 'pycountry>=19.8.18',
     ],
     dependency_links = [],
     classifiers=[
