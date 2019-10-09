@@ -7,13 +7,16 @@ from chibi.file.temp import Chibi_temp_path
 
 #class Test_crunchyroll( TestCase ):
 class Test_crunchyroll:
+    @skip( "slow" )
     def test_should_get_the_lenguage_form_the_url( self ):
         self.assertEqual( 'es', self.site.lenguage )
 
+    @skip( "slow" )
     def test_should_have_a_serie( self ):
         self.assertTrue( self.site.series )
         self.assertEqual( 1, len( self.site.series ) )
 
+    @skip( "slow" )
     def test_should_have_episodes( self ):
         self.assertTrue( self.site.series[0].episodes )
         self.assertGreater( len( self.site.series[0].episodes ), 1 )
