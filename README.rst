@@ -29,7 +29,7 @@ how to used
 ===========
 
 
-.. code-block:: none
+.. code-block:: text
 
 	usage: chibi_dl [-h] [--user USER] [--password PASSWORD]
 						[--resoulution QUALITY]

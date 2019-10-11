@@ -1,3 +1,4 @@
+import os
 try:
     from setuptools import setup, find_packages
 except:
@@ -8,7 +9,7 @@ README = open(os.path.join( here, 'README.rst' ) ).read()
 
 setup(
     name='chibi_dl',
-    version='0.0.1',
+    version='0.0.2',
     description='',
     long_description=README,
     license='',

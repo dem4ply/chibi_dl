@@ -3,6 +3,7 @@ import logging
 import ffmpeg
 import m3u8
 from chibi.atlas import loads
+from chibi.file import Chibi_path
 from pymkv import MKVFile, MKVTrack
 
 from .exceptions import Cannot_find_subtitles, Episode_not_have_media
@@ -65,7 +66,7 @@ class Episode( Site ):
 
     @property
     def name( self ):
-        title = self.serie_title.replace( 'Season ', 'S' ).made_safe()
+        title = self.serie_title.replace( 'Season ', 'S' )
         if self.number:
             return "{serie_title} - {number}".format(
                 serie_title=title, number=self.number )
@@ -75,14 +76,16 @@ class Episode( Site ):
     @property
     def file_name( self ):
         ext = 'm4a'
-        return "{name} {resolution}.{ext}".format(
+        result = "{name} {resolution}.{ext}".format(
             name=self.name, ext=ext, resolution=self.resolution_str )
+        return Chibi_path( result ).made_safe()
 
     @property
     def file_name_mkv( self ):
         ext = 'mkv'
-        return "{name} {resolution}.{ext}".format(
+        result = "{name} {resolution}.{ext}".format(
             name=self.name, ext=ext, resolution=self.resolution_str )
+        return Chibi_path( result ).made_safe()
 
     @property
     def media_metadata( self ):
