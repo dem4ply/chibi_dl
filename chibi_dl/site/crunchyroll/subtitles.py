@@ -4,6 +4,7 @@ import zlib
 
 import pycountry
 from chibi.atlas import loads
+from chibi.file import Chibi_path
 from chibi.parser import to_bool
 from pymkv import MKVTrack
 
@@ -72,7 +73,9 @@ class Subtitle( Site ):
     @property
     def file_name( self ):
         ext = 'ass'
-        return "{name}.{ext}".format( name=self.name, ext=ext )
+        result = Chibi_path( "{name}.{ext}".format( name=self.name, ext=ext ) )
+        result = result.made_safe()
+        return result
 
     def download( self, path ):
         output_path = path + self.file_name

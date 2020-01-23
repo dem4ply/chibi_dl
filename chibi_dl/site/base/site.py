@@ -63,7 +63,15 @@ class Site:
     def get(
             self, *args, delay=16, retries=0, max_retries=5,
             ignore_status_code=None, **kw ):
-        response = self.session.get( *args, **kw )
+        try:
+            response = self.session.get( *args, **kw )
+        except requests.ConnectionError:
+            time.sleep( delay )
+            logger.warning( (
+                "no se pudo connectar con el servicor esperando {} segundos "
+                "en {}" ).format( delay, args[0], ) )
+            return self.get(
+                *args, delay=delay ** 2, retries=retries + 1, **kw )
         if ignore_status_code and response.status_code in ignore_status_code:
             logger.warning( (
                 "se recibio {} se ignora" ).format( response.status_code, ) )
