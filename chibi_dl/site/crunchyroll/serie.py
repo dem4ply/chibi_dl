@@ -2,6 +2,7 @@ import logging
 
 from bs4 import BeautifulSoup
 from chibi.file.temp import Chibi_temp_path
+from chibi.atlas import Chibi_atlas
 
 from .episode import Episode
 from .regex import re_episodes
@@ -38,6 +39,14 @@ class Show( Site ):
                 continue
             mkv = episode.pack( temp_folder )
             mkv.move( path )
+
+    @property
+    def metadata( self ):
+        try:
+            raise NotImplementedError
+            return self._metadata
+        except AttributeError:
+            self._metadata = Chibi_atlas()
 
     @property
     def title( self ):

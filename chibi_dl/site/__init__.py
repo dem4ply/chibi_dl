@@ -9,7 +9,7 @@ class Site:
         self._sites = [ self.crunchytoll, self.tmo_fans ]
 
     def append( self, *urls ):
-        for url in urls:
+        for url in filter( lambda x: x, urls ):
             site = self.identify_site( url )
             site.append( url )
 
