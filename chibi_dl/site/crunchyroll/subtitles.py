@@ -4,6 +4,7 @@ import zlib
 
 import pycountry
 from chibi.atlas import loads, Chibi_atlas
+from chibi.atlas import loads
 from chibi.file import Chibi_path
 from chibi.parser import to_bool
 from pymkv import MKVTrack
