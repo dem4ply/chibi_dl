@@ -3,7 +3,7 @@ import logging
 import zlib
 
 import pycountry
-from chibi.atlas import loads
+from chibi.atlas import loads, Chibi_atlas
 from chibi.file import Chibi_path
 from chibi.parser import to_bool
 from pymkv import MKVTrack
@@ -17,45 +17,47 @@ logger = logging.getLogger( "chibi_dl.sites.crunchyroll.subtitle" )
 
 
 class Subtitle( Site ):
-    def __init__( self, url, user, password, *args, **kw ):
-        self._default = kw.pop( 'default' )
-        super().__init__( url, *args, user=user, password=password, **kw )
-
     @classmethod
-    def from_crunchyroll_xml( cls, d, episode ):
-        try:
-            d[ 'url' ] = d[ 'link' ]
-            del d[ 'link' ]
-            return cls.from_site( site=episode, **d )
-        except Exception as e:
-            import pdb
-            pdb.set_trace()
+    def from_info( cls, url, **data ):
+        data = Chibi_atlas( data )
+        result = cls( url )
+        result.info.title = data.title
+        result.info.name = data.name
+        result.info.id = data.id
+        result.info.default = data.default
+        return result
 
-    def get_info( self ):
-        logger.debug( "obteniendo info del subtitulo" )
-        page = self.get( self.url )
-        data = loads( page.text ).subtitle
-        page.close()
-        self.id = data.id
-        self._data = loads( self.decrypt_subtitles( data.data, data.iv ) )
-        self._data = self.data.subtitle_script
+    def parse_info( self ):
+        data = self.soup.subtitle
+        return data
+
+    @property
+    def subtitle_xml( self ):
+        try:
+            return self._subtitle_xml
+        except:
+            data = self.soup.subtitle
+            data = loads( self.decrypt_subtitles(
+                data.data, data.iv, data.id ) )
+            self._subtitle_xml = data.subtitle_script
+            return self._subtitle_xml
+
+    def download( self, path ):
+        if path.is_a_folder:
+            path += self.file_name
+        f = path.open()
+        f.write( self.ass )
+        logger.info( f'write subtitulo "{path}"' )
+        return path
 
     @property
     def default( self ):
-        return to_bool( self._default )
-
-    @property
-    def data( self ):
-        try:
-            return self._data
-        except AttributeError:
-            self.get_info()
-            return self._data
+        return to_bool( self.info.default )
 
     @property
     def lang( self ):
         return "{}-{}".format(
-            self.data.lang_code[:2], self.data.lang_code[-2:] )
+            self.subtitle_xml.lang_code[:2], self.subtitle_xml.lang_code[-2:] )
 
     @property
     def lang_ISO_639_2( self ):
@@ -67,8 +69,7 @@ class Subtitle( Site ):
 
     @property
     def name( self ):
-        return "{name}.{lang}".format(
-            name=self.parent.name, lang=self.lang, ext='ass' )
+        return f"{self.info.name}.{self.lang}"
 
     @property
     def file_name( self ):
@@ -77,12 +78,11 @@ class Subtitle( Site ):
         result = result.made_safe()
         return result
 
-    def download( self, path ):
-        output_path = path + self.file_name
-        f = output_path.open()
-        f.write( self.to_ass() )
-        logger.info( "descargado subtitulo '{}' ".format( f ) )
-        return output_path
+    def __str__( self ):
+        return self.name
+
+    def __repr__( self ):
+        return f"Subtitle( {self} )"
 
     def to_mkv_track( self, path ):
         track = MKVTrack(
@@ -90,7 +90,9 @@ class Subtitle( Site ):
             default_track=self.default, track_name=self.data.title )
         return track
 
-    def to_ass( self ):
+    @property
+    def ass( self ):
+        data = self.subtitle_xml
         output = ''
 
         def ass_bool(strvalue):
@@ -100,20 +102,20 @@ class Subtitle( Site ):
             return assvalue
 
         output = '[Script Info]\n'
-        output += 'Title: %s\n' % self.data.title
+        output += f'Title: {data.title}\n'
         output += 'ScriptType: v4.00+\n'
-        output += 'WrapStyle: %s\n' % self.data['wrap_style']
-        output += 'PlayResX: %s\n' % self.data['play_res_x']
-        output += 'PlayResY: %s\n' % self.data['play_res_y']
+        output += f'WrapStyle: {data.wrap_style}\n'
+        output += f'PlayResX: {data.play_res_x}\n'
+        output += f'PlayResY: {data.play_res_y}\n'
         output += "[V4+ Styles]\n"
         output += (
             "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour,"
             " OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,"
             " ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow,"
             " Alignment, MarginL, MarginR, MarginV, Encoding" )
-        if not isinstance( self.data.styles.style, list ):
-            self.data.styles.style = [ self.data.styles.style ]
-        for style in self.data.styles.style:
+        if not isinstance( data.styles.style, list ):
+            data.styles.style = [ data.styles.style ]
+        for style in data.styles.style:
             output += 'Style: ' + style['name']
             output += ',' + style['font_name']
             output += ',' + style['font_size']
@@ -139,13 +141,15 @@ class Subtitle( Site ):
             output += ',' + style['encoding']
             output += '\n'
 
-        output += """
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-"""
-        if not isinstance( self.data.events.event, list ):
-            self.data.events.event = [ self.data.events.event ]
-        for event in self.data.events.event:
+        output += (
+            "\n[Events]\n"
+            "Format: Layer, Start, End, Style, Name, MarginL, "
+            "MarginR, MarginV, Effect, Text\n"
+        )
+
+        if not isinstance( data.events.event, list ):
+            data.events.event = [ data.events.event ]
+        for event in data.events.event:
             output += 'Dialogue: 0'
             output += ',' + event['start']
             output += ',' + event['end']
@@ -160,10 +164,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         return output
 
-    def decrypt_subtitles( self, data, iv ):
+    def decrypt_subtitles( self, data, iv, _id ):
         data = bytes_to_intlist( base64.b64decode( data ) )
         iv = bytes_to_intlist( base64.b64decode( iv ) )
-        id = int( self.id )
+        id = int( _id )
         key = obfuscate_key( id )
         decrypted_data = intlist_to_bytes(
             aes_cbc_decrypt( data, key, iv ) )

@@ -26,16 +26,14 @@ class Nhentai( Site ):
             url = Chibi_url( 'https://nhentai.net' )
         self.url = url
         self.enable_full_scan = False
+        self.processing_order = [ self.episode_class ]
 
     def append( self, url ):
+        result = super().append( url )
+        if result:
+            return result
         url = Chibi_url( url )
 
-        processing_order = [ self.episode_class ]
-        for proccesor in processing_order:
-            result = proccesor.can_proccess( url )
-            if result:
-                self.urls.append( result )
-                return result
         if re_main.match( str( url.url ) ):
             self.enable_full_scan = True
         return result

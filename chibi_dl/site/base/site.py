@@ -12,27 +12,41 @@ logger = logging.getLogger( "chibi_dl.sites.base.site" )
 
 
 class Site:
-    def __init__( self, url, parent=None, *args, **kw ):
+    def __init__( self, url, *args, **kw ):
         self.url = Chibi_url( url.strip() )
         self.enable_full_scan = False
-        self.parent = parent
+
+        self.urls = []
+        self.processing_order = []
 
         for k, v in kw.items():
             setattr( self, k, v )
 
-    def get( self, *args, delay=10, retries=0, max_retries=5, **kw ):
+    def get( self, *args, url=None, delay=10, retries=0, max_retries=5, **kw ):
+        if url is None:
+            url = self.url
         try:
-            response = self.url.get()
+            response = url.get()
         except requests.ConnectionError:
             if retries > max_retries:
+                logger.exception( "maximo numero de reintentos para {url}" )
                 raise
-            time.sleep( delay )
             logger.warning( (
                 f"no se pudo connectar con el servicor esperando {delay} segundos "
-                f"en {self.url}" ) )
-            return self.get( *args, delay=delay, retries=retries, **kw )
+                f"en {url}" ) )
+            time.sleep( delay )
+            return self.get(
+                *args, url=url, delay=delay, retries=retries, **kw )
         if response.status_code not in [ 200 ]:
-            return self.get( *args, delay=delay, retries=retries + 1, **kw )
+            if retries > max_retries:
+                logger.error( "maximo numero de reintentos para {url}" )
+                raise Max_number_of_retries_error( self, url )
+            logger.warning( (
+                f"status code :{response.status_code} url: {url} "
+                f"se reintentara en {delay}" ) )
+            time.sleep( delay )
+            return self.get(
+                *args, url=url, delay=delay, retries=retries + 1, **kw )
         return response
 
     @property
@@ -58,6 +72,25 @@ class Site:
         except AttributeError:
             self.load()
             return self._response.native
+
+    def append( self, url ):
+        url = Chibi_url( url )
+
+        for proccesor in self.processing_order:
+            result = proccesor.can_proccess( url )
+            if result:
+                self.urls.append( result )
+                return result
+
+    def __iter( self ):
+        for url in self.urls:
+            yield url
+
+    @classmethod
+    def from_info( cls, url, data ):
+        raise NotImplementedError( "no implementada la funcion from_info" )
+
+
 
     def load( self ):
         response = self.get()

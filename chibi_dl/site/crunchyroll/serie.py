@@ -6,14 +6,51 @@ from chibi.atlas import Chibi_atlas
 
 from .episode import Episode
 from .regex import re_episodes
+from .regex import re_show, re_video, re_lenguage, re_csrf_token
 from .site import Site
 from chibi_dl.site.crunchyroll.exceptions import Episode_not_have_media
+from chibi.atlas import Chibi_atlas
 
 
 logger = logging.getLogger( "chibi_dl.sites.crunchyroll.show" )
 
 
-class Show( Site ):
+class Serie( Site ):
+
+    @classmethod
+    def can_proccess( cls, url ):
+        if re_show.match( str( url ) ):
+            return cls( url )
+
+
+    def parse_info( self ):
+        result = Chibi_atlas()
+        result.title = self.soup.select( "h1.ellipsis" )[0].text.strip()
+        description = self.soup.find( "p", { "class": "description" } )
+        result.description = description.find(
+            "span", { "class": "more" } ).text.strip()
+
+        seasons = self.soup.find( "ul", { "class": "list-of-seasons cf" } )
+        result.seasons = []
+        for season in seasons.find_all( "li", recursive=False ):
+            _season = Chibi_atlas()
+            result.seasons.append( _season )
+            _season.name = season.a.text.strip()
+            _season.episodes = []
+            episodes = season.find_all( "a", { "class": "episode" } )
+            for episode in episodes:
+                e = Episode( url = self.url + episode.attrs[ "href" ] )
+                _season.episodes.append( e )
+        return result
+
+    def __iter__( self ):
+        for season in self.info.seasons:
+            for episode in season.episodes:
+                yield episode
+
+
+
+
     def download( self, path ):
         logger.info(
             'iniciando descarga de la serie "{}" de "{}"'.format(

@@ -1,64 +1,121 @@
+from collections import Counter
+from unittest.mock import patch
+import itertools
 import time
 from unittest import TestCase, skip
-from chibi_dl.site.crunchyroll import Crunchyroll
+from chibi_dl.site.crunchyroll import Crunchyroll, Serie, Episode
+from chibi_dl.site.crunchyroll.subtitles import Subtitle
 from chibi_dl.site.crunchyroll.exceptions import Episode_not_have_media
 from vcr_unittest import VCRTestCase
 from chibi.file.temp import Chibi_temp_path
+from chibi.atlas import Chibi_atlas
 
-#class Test_crunchyroll( TestCase ):
-class Test_crunchyroll:
-    @skip( "slow" )
-    def test_should_get_the_lenguage_form_the_url( self ):
-        self.assertEqual( 'es', self.site.lenguage )
 
-    @skip( "slow" )
-    def test_should_have_a_serie( self ):
-        self.assertTrue( self.site.series )
-        self.assertEqual( 1, len( self.site.series ) )
+class Test_crunchyroll( TestCase ):
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
+        self.helper = None
+        if self.__class__ != Test_crunchyroll:
+            self.run = TestCase.run.__get__( self, self.__class__ )
+        else:
+            self.run = lambda self, *args, **kwargs: None
 
-    @skip( "slow" )
-    def test_should_have_episodes( self ):
-        self.assertTrue( self.site.series[0].episodes )
-        self.assertGreater( len( self.site.series[0].episodes ), 1 )
+    def test_iter_a_serie( self ):
+        with self.subTest( "should have urls" ):
+            self.assertTrue( self.site.urls )
+        series = list( filter(
+            lambda x: isinstance( x, Serie ), self.site.urls ) )
+        with self.subTest( "at least should have one serie" ):
+            self.assertTrue( series )
 
-    @skip( "slow" )
-    def test_should_get_all_the_subtitles_of_the_serie( self ):
-        try:
-            for serie in self.site.series:
-                for episode in serie.episodes:
-                    for subtitle in episode.subtitles:
-                        self.assertTrue( subtitle.data )
-        except Exception as e:
-            import pdb
-            pdb.post_mortem( e.__traceback__ )
-            raise
+        serie = series[0]
+        episodes = list( itertools.islice( serie, 2 ) )
+        with self.subTest( "the series should have episodes" ):
+            self.assertTrue( episodes )
+            for episode in episodes:
+                self.assertIsInstance( episode, Episode )
 
-    @skip( "slow" )
-    def test_should_get_the_steaming_file( self ):
-        episodes_with_media = 0
-        try:
-            for serie in self.site.series:
-                for episode in serie.episodes:
-                    try:
-                        self.assertTrue( episode.stream.uri )
-                        episodes_with_media += 1
-                    except Episode_not_have_media:
-                        pass
-        except Exception as e:
-            import pdb
-            pdb.post_mortem( e.__traceback__ )
-            raise
-        if episodes_with_media < 1:
-            self.fail( "no se encontraron stream uri" )
+        subtitles = []
+        for episode in episodes:
+            with self.subTest( "each episode should have info" ):
+                self.assertTrue( episode.info )
+                self.assertIsInstance( episode.info, Chibi_atlas )
 
-    @skip( "slow" )
-    def test_should_download_episodes( self ):
-        folder = Chibi_temp_path()
-        result = self.site.series[0].episodes[0].download( folder )
-        m4a = next( folder.find( r".*.m4a" ) )
-        self.assertTrue( m4a )
-        subtitles = list( folder.find( r".*.ass" ) )
-        self.assertGreater( len( subtitles ), 1 )
+            with self.subTest( "each episode should have stream" ):
+                self.assertTrue( episode.stream )
+                self.assertTrue( episode.stream.uri )
+
+            with self.subTest(
+                    "the episode should have subtitles", episode=episode ):
+                self.assertTrue( episode.subtitles )
+                subtitles += episode.subtitles[:2]
+
+            for subtitle in episode.subtitles:
+                with self.subTest(
+                        "subtitle should have a iso lang", subtitle=subtitle ):
+                    iso_lang = subtitle.lang_ISO_639_2
+                    self.assertTrue( iso_lang )
+
+        subtitles = subtitles[:2]
+        with self.subTest( "the subtitles should have info" ):
+            for subtitle in subtitles:
+                self.assertTrue( subtitle.info )
+                self.assertIsInstance( subtitle.info, Chibi_atlas )
+
+        with self.subTest( "the subtitles should have be tranformed ot ass" ):
+            for subtitle in subtitles:
+                ass = subtitle.ass
+                self.assertIsInstance( ass, str )
+                self.assertTrue( ass )
+
+        with self.subTest( "subtitle download should write the ass file" ):
+            for subtitle in subtitles:
+                download_path = Chibi_temp_path()
+                subtitle_path = subtitle.download( download_path )
+                self.assertTrue( subtitle_path.exists )
+                self.assertEqual( subtitle_path.open().read(), subtitle.ass )
+
+        with self.subTest( "episode should have a stream" ):
+            for episode in episodes:
+                stream = episode.stream
+                self.assertIsNotNone( stream )
+                self.assertTrue( stream.uri )
+
+        with self.subTest( "when download the stream should run ffmpeg" ):
+            for episode in episodes:
+                with patch( 'ffmpeg.run' ) as run:
+                    download_path = Chibi_temp_path()
+                    stream_path = episode.download_stream( download_path )
+                    self.assertIsNotNone( stream_path )
+                    run.assert_called()
+
+        for episode in episodes:
+            with self.subTest(
+                    "download episode without subs", episode=episode ):
+                with patch( 'ffmpeg.run' ) as run:
+                    download_path = Chibi_temp_path()
+                    stream_path = episode.download(
+                        download_path, download_subtitles=False )
+                    self.assertFalse( list( download_path.ls() ) )
+
+        for episode in episodes:
+            with self.subTest(
+                    "download episode with subs", episode=episode ):
+                with patch( 'ffmpeg.run' ) as run:
+                    download_path = Chibi_temp_path()
+                    stream_path = episode.download(
+                        download_path, download_subtitles=True )
+                    subtitles = list( download_path.ls() )
+                    self.assertEqual(
+                        len( episode.subtitles ), len( subtitles ) )
+
+        for episode in episodes:
+            with self.subTest(
+                    "only one subtitle by episode should have default",
+                    episode=episode ):
+                defaults = Counter( s.default for s in episode.subtitles  )
+                self.assertEqual( defaults[ True ], 1 )
+
 
     @skip( "slow" )
     def test_should_pack_the_episode_with_the_subtitles( self ):
@@ -71,47 +128,16 @@ class Test_crunchyroll:
         pack = self.site.series[0].episodes[0].pack( folder )
         mkv = next( folder.find( r".*.mkv" ) )
 
-    @skip( "slow" )
-    def test_should_download_episode_withtous_subtitles( self ):
-        folder = Chibi_temp_path()
-        result = self.site.series[0].episodes[0].download(
-            folder, download_subtitles=False )
-        m4a = next( folder.find( r".*.m4a" ) )
-        self.assertTrue( m4a )
-        subtitles = list( folder.find( r".*.ass" ) )
-        self.assertFalse( subtitles )
-
-    @skip( "slow" )
-    def test_the_subtitles_should_have_the_episode_like_parent( self ):
-        folder = Chibi_temp_path()
-        for episode in self.site.series[0].episodes:
-            for subtitle in episode.subtitles:
-                self.assertEqual( subtitle.parent, episode )
-
-    @skip( "slow" )
-    def test_should_create_the_expected_subtitles_in_the_folder( self ):
-        folder = Chibi_temp_path()
-        result = self.site.series[0].episodes[0].subtitles[0].download( folder )
-        files = list( folder.ls() )
-        self.assertEqual( 1, len( files ) )
-
-    @skip( "slow" )
-    def test_should_download_all_the_series( self ):
-        folder = Chibi_temp_path()
-        self.site.series[0].download( folder )
-        self.assertTrue( list( folder.ls() ) )
-
 
 class Test_crunchyroll_no_dub( VCRTestCase, Test_crunchyroll ):
     def setUp( self ):
         super().setUp()
-        self.site = Crunchyroll(
-            user='asdf',
-            password='1234',
-            quality=240 )
-
+        self.site = Crunchyroll()
         self.site.append( 'https://www.crunchyroll.com/es/yuruyuri' )
-        self.site.login()
+        #self.site.login()
+
+    def tearDown( self ):
+        super().tearDown()
 
 
 """

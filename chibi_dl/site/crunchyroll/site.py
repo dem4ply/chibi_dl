@@ -43,9 +43,13 @@ class Crunchyroll( Site ):
     def __init__( self, *args, **kw ):
         super().__init__( '', *args, **kw )
         self.series = []
+        from .serie import Serie
+        self.processing_order = [ Serie ]
 
     def append( self, url ):
-        from .serie import Show
+        return super().append( url )
+
+
         lenguage = re_lenguage.search( url )
         if not lenguage:
             logger.error(
@@ -54,7 +58,7 @@ class Crunchyroll( Site ):
         self.lenguage = lenguage
 
         if re_show.match( url ):
-            self.series.append( Show(
+            self.series.append( Serie(
                 url, user=self.user, password=self.password, parent=self,
                 lenguage=lenguage, quality=self.quality ) )
         elif re_video.match( self.url ):

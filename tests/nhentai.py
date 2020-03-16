@@ -19,32 +19,30 @@ class Test_ehentai( TestCase ):
         else:
             self.run = lambda self, *args, **kwargs: None
 
-    def test_the_site_have_urls( self ):
+    def test_the_urls_should_no_be_empty( self ):
         self.assertTrue( self.site.urls )
+
+    def test_the_site_have_urls_and_be_a_episode( self ):
         for url in self.site.urls:
             self.assertIsInstance( url, Episode )
 
     def test_the_url_should_have_info( self ):
-        self.assertTrue( self.site.urls )
         for url in self.site.urls:
             data = url.info
             self.assertIn( 'title', data )
             self.assertIn( 'tags', data )
 
     def test_the_url_should_have_cover( self ):
-        self.assertTrue( self.site.urls )
         for url in self.site.urls:
             self.assertTrue( url.cover )
 
     def test_the_url_should_have_images( self ):
-        self.assertTrue( self.site.urls )
         for url in self.site.urls:
             self.assertTrue( url.images )
             for image in url.images:
                 self.assertIsInstance( image, Image )
 
     def test_the_url_should_have_images( self ):
-        self.assertTrue( self.site.urls )
         for url in self.site.urls:
             self.assertTrue( url.upload_at )
             self.assertIsInstance( url.upload_at, datetime.datetime )
@@ -56,7 +54,7 @@ class Test_ehentai( TestCase ):
             self.assertTrue( url.metadata.scan_at )
             self.assertTrue( url.metadata.title )
             self.assertTrue( url.metadata.url )
-            self.assertTrue( url.metadata.images_urls )
+            #self.assertTrue( url.metadata.images_urls )
             self.assertTrue( url.metadata.tags )
             self.assertTrue( url.metadata.cover_url )
 
