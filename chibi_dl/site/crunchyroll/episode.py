@@ -35,7 +35,8 @@ class Episode( Site ):
         if isinstance( subtitles, dict ):
             subtitles = [ subtitles ]
         return [
-            Subtitle.from_info( self.url + s.link, name=title, **s )
+            Subtitle.from_info(
+                self.url + s.link, name=title, parent=self, **s )
             for s in subtitles ]
 
     def _parse_episode_number( self ):

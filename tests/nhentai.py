@@ -57,6 +57,7 @@ class Test_ehentai( TestCase ):
             #self.assertTrue( url.metadata.images_urls )
             self.assertTrue( url.metadata.tags )
             self.assertTrue( url.metadata.cover_url )
+            self.assertTrue( url.metadata.id )
 
     def test_each_image_should_get_the_real_url_for_the_image( self ):
         self.assertTrue( self.site.urls )

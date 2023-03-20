@@ -8,23 +8,18 @@ from chibi.metaphors.book import End_book
 from chibi.atlas import Chibi_atlas
 
 
-logger = logging.getLogger( "chibi_dl.sites.ehentai" )
+logger = logging.getLogger( "chibi_dl.sites.nhentai" )
 
 
 class Site( Site_base ):
-    def _pre_to_dict( self ):
-        return dict(
-            url=self.url, user=self.user, password=self.password,
-            lenguage=self.lenguage, quality=self.quality )
+    pass
 
 
 class Nhentai( Site ):
-
     def __init__( self, url=None, *args, book=None, **kw ):
-        self.urls = []
         if url is None:
             url = Chibi_url( 'https://nhentai.net' )
-        self.url = url
+        super().__init__( url, *args, book=book, **kw )
         self.enable_full_scan = False
         self.processing_order = [ self.episode_class ]
 
@@ -43,28 +38,31 @@ class Nhentai( Site ):
             for url in self.urls:
                 yield url
         if self.enable_full_scan:
-            current_page = int( self.url.params.get( "page", 1 ) )
-            last_page = self.last_page
-            book = Book(
-                total_elements=last_page, page_size=1, page=current_page,
-                offset_dict={ 'page': 'page' } )
             for galerie in self.info.galeries:
                 yield galerie
-            while True:
-                try:
-                    book.next()
-                    page = type( self )( self.url + book )
-                    for galerie in page.info.galeries:
-                        yield galerie
-                except End_book:
-                    break
+            for page in self.pages:
+                for galerie in page.info.galeries:
+                    yield galerie
+
+    @property
+    def pages( self ):
+        book = Book(
+            total_elements=self.last_page, page_size=1,
+            page=self.current_page, offset_dict={ 'page': 'page' } )
+        for page in book:
+            yield type( self )( self.url + page, parent=self )
 
     def parse_info( self ):
         galeries = self.soup.find_all( "div", { "class": "gallery" } )
         links = [
-            self.episode_class( self.url + g.a.attrs[ 'href' ] )
+            self.episode_class(
+                self.url + g.a.attrs[ 'href' ], parent=self )
             for g in galeries ]
         return Chibi_atlas( galeries=links )
+
+    @property
+    def current_page( self ):
+        return int( self.url.params.get( "page", 1 ) )
 
     @property
     def last_page( self ):
@@ -76,8 +74,14 @@ class Nhentai( Site ):
         from .episode import Episode
         return Episode
 
-
     @classmethod
     def can_proccess( cls, url ):
         if re_main.match( str( url ) ):
             return cls( url )
+
+    def __bool__( self ):
+        return bool( self.url )
+
+    def i_can_proccess_this( self, url ):
+        regex = ( re_episode, re_main )
+        return any( ( r.match( url ) for r in regex ) )

@@ -1,3 +1,4 @@
+import itertools
 import logging
 
 from bs4 import BeautifulSoup
@@ -22,7 +23,6 @@ class Serie( Site ):
         if re_show.match( str( url ) ):
             return cls( url )
 
-
     def parse_info( self ):
         result = Chibi_atlas()
         result.title = self.soup.select( "h1.ellipsis" )[0].text.strip()
@@ -39,17 +39,14 @@ class Serie( Site ):
             _season.episodes = []
             episodes = season.find_all( "a", { "class": "episode" } )
             for episode in episodes:
-                e = Episode( url = self.url + episode.attrs[ "href" ] )
+                e = Episode(
+                    url=self.url + episode.attrs[ "href" ], parent=self )
                 _season.episodes.append( e )
         return result
 
     def __iter__( self ):
-        for season in self.info.seasons:
-            for episode in season.episodes:
-                yield episode
-
-
-
+        return itertools.chain.from_iterable(
+            season.episodes for season in self.info.seasons )
 
     def download( self, path ):
         logger.info(
@@ -87,27 +84,33 @@ class Serie( Site ):
 
     @property
     def title( self ):
-        try:
-            return self._title
-        except AttributeError:
-            self.load_episodes()
-            return self._title
+        return self.info.title
 
     @property
     def episodes( self ):
         try:
             return self._episodes
         except AttributeError:
-            self.load_episodes()
+            self._episodes = list(
+                itertools.chain.from_iterable(
+                    season.episodes for season in self.info.seasons ) )
             return self._episodes
 
     def load_episodes( self ):
         page = self.get( self.url, )
-        soup = BeautifulSoup( page.content, 'html.parser' )
-        self._title = soup.select( "h1.ellipsis" )[0].text.strip()
+        soup = page.native
 
         self._episodes = []
-        episodes_links = re_episodes.findall( page.text )
+        episodes_links = re_episodes.findall( page.native.text )
+        episodes = page.native.find_all(
+            'a',
+            **{ 'class': 'portrait-element block-link titlefix episode' }
+        )
+        for episode in episodes:
+            url = self.url + episode.attrs[ 'href' ]
+            self._episodes.append( Episode.from_site(
+                self, url=url ) )
+        """
         for episode_link, episode_type in episodes_links:
             episode_link = episode_link.rsplit( '/', 1 )[1]
             episode_url = "{url}/{episode}".format(
@@ -115,3 +118,4 @@ class Serie( Site ):
             if episode_link:
                 self._episodes.append( Episode.from_site(
                     self, url=episode_url ) )
+        """

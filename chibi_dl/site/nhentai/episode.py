@@ -56,6 +56,7 @@ class Episode( Site ):
             title=self.info.title,
             upload_at=self.upload_at,
             url=self.url,
+            id=self.url.base_name,
         )
 
     def _parse_tags( self, info ):
@@ -65,7 +66,7 @@ class Episode( Site ):
             name = name.strip().lower().replace( ':', '' )
             tags[ name ] = []
             for a in section.find_all( 'a' ):
-                text = a.find( text=True, recursive=False )
+                text = a.find( text=True )
                 text = text.strip()
                 tags[ name ].append( text )
         return tags

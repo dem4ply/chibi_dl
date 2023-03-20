@@ -11,6 +11,8 @@ from chibi.config import basic_config, load as load_config
 from chibi_dl.site import Site
 
 from chibi_dl.site.nhentai.site import Nhentai
+from chibi_dl.site.crunchyroll.site import Crunchyroll
+from chibi_dl.site.tmofans import TMO_fans
 
 
 logger_formarter = '%(levelname)s %(name)s %(asctime)s %(message)s'
@@ -78,18 +80,51 @@ def main():
     if args.config_site:
         load_config( args.config_site )
 
-    proccessors = [ Nhentai() ]
+    tmo_fans = TMO_fans( user=args.user, password=args.password, )
+    proccessors = [
+        Nhentai(),
+        Crunchyroll(
+            user=args.user, password=args.password,
+            quality=args.quality ),
+        tmo_fans,
+    ]
 
     for site in args.sites:
         for proccesor in proccessors:
-            if proccesor.append( url ):
-                break
+            if proccesor.i_can_proccess_this( site ):
+                if proccesor.append( site ):
+                    break
+
 
     if args.only_metadata:
         for proccesor in proccessors:
             for batch in proccesor:
                 for item in batch:
                     json.dump( item.metadata, sys.stdout )
+    if args.only_print:
+        if args.only_print_links:
+            for serie in tmo_fans.series:
+                print( serie.url )
+        """
+        for proccesor in proccessors:
+            logger.info( proccesor )
+            for batch in proccesor:
+                logger.info( proccesor )
+                for item in batch:
+                    logger.info( proccesor )
+                    json.dump( item.metadata, sys.stdout )
+        """
+    else:
+        for serie in tmo_fans.series:
+            serie.download( args.download_path )
+
+        """
+        for proccesor in proccessors:
+            proccesor.login()
+            for download in proccesor:
+                download.download( args.download_path )
+        """
+
 
     """
     site = Site(

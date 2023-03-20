@@ -19,9 +19,9 @@ logger = logging.getLogger( "chibi_dl.sites.crunchyroll.subtitle" )
 
 class Subtitle( Site ):
     @classmethod
-    def from_info( cls, url, **data ):
+    def from_info( cls, url, parent=None, **data ):
         data = Chibi_atlas( data )
-        result = cls( url )
+        result = cls( url, parent=parent )
         result.info.title = data.title
         result.info.name = data.name
         result.info.id = data.id

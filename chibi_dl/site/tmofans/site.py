@@ -5,6 +5,11 @@ import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium import webdriver
+from selenium.webdriver import DesiredCapabilities
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+import undetected_chromedriver as uc
 
 from .exceptions import Cannot_pass_cloud_flare, Cannot_login
 from .regex import re_show, re_follow, re_pending, re_read
@@ -36,7 +41,7 @@ class Site( Site_base ):
 
     def cross_cloud_flare( self ):
         if not self.cloud_flare_passed:
-            logger.info( "obteniendo {} usando firefox".format( self.url ) )
+            logger.info( f"obteniendo {self.url} usando el navegador" )
             self.firefox.get( self.url )
             logger.info( "esperando 10 segundos a que pase cloud flare" )
             time.sleep( 10 )
@@ -44,7 +49,8 @@ class Site( Site_base ):
             self.user_agent = self.firefox.execute_script(
                 "return navigator.userAgent;" )
 
-            if self.get( self.url ).ok:
+
+            if self.get( url=self.url ).ok:
                 logger.info( "se pueden descargar las imagenes de TMOFans" )
                 self.cloud_flare_passed = True
             else:
@@ -77,9 +83,42 @@ class Site( Site_base ):
             return self._firefox
         except AttributeError:
             options = Options()
-            options.headless = True
+
+            """
+            profile = webdriver.FirefoxProfile()
+            profile.set_preference( "dom.webdriver.enabled", False )
+            profile.set_preference( 'useAutomationExtension', False )
+            profile.set_preference(
+                "general.useragent.override",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/83.0.4103.61 Safari/537.36" )
+            profile.update_preferences()
+            desired = DesiredCapabilities.FIREFOX
+            """
+
+
+            """
+            #options.headless = True
             logger.info( "abriendo firefox" )
-            self._firefox = webdriver.Firefox( options=options )
+            #self._firefox = webdriver.Firefox( options=options )
+            self._firefox = webdriver.Firefox(
+                firefox_profile=profile,
+                desired_capabilities=desired
+            )
+            logger.info( "abrieno chrome" )
+            self._firefox.execute_script(
+                "Object.defineProperty(navigator, 'webdriver',"
+                "{get: () => undefined})" )
+            navigator_webdriver = self._firefox.execute_script(
+                "return navigator.webdriver;" )
+            logger.info( f"firefox.navigator.webdriver: {navigator_webdriver}" )
+            """
+            desire_capabilities = DesiredCapabilities.CHROME
+            desire_capabilities[ 'pageLoadStrategy' ] = 'eager'
+            logger.info( "iniciando chrome" )
+            a = uc.Chrome( desired_capabilities=desire_capabilities );
+            self._firefox = a
             return self._firefox
 
     def __del__( self ):
@@ -118,8 +157,6 @@ class TMO_fans( Site ):
             for l in self.get_all_read():
                 self.append( l )
         else:
-            import pdb
-            pdb.set_trace()
             logger.error(
                 "la url {} no se pudo identificar como serie".format( url ) )
 
@@ -129,6 +166,28 @@ class TMO_fans( Site ):
         if not self.cloud_flare_passed:
             self.cross_cloud_flare()
 
+        email = self.firefox.find_element( By.ID, "email" )
+        password = self.firefox.find_element( By.ID, "password" )
+        submit = self.firefox.find_element(
+            By.XPATH,
+            "/html/body/div[1]/main/div/div/div/div[1]/form/div[4]"
+            "/div[1]/button" )
+
+        email.send_keys( self.user )
+        password.send_keys( self.password )
+
+        submit.click()
+        logger.info( "esperando 10 segundos a que termine el login" )
+        time.sleep( 10 )
+        if self.firefox.current_url == self.url:
+            raise Cannot_login
+        else:
+            self._login_ok = True
+            self.cookies = self.firefox.get_cookies()
+            self.user_agent = self.firefox.execute_script(
+                "return navigator.userAgent;" )
+
+        """
         page = self.get( self.url )
         soup = BeautifulSoup( page.content, 'html.parser' )
         form = soup.find( "form", { "class": "form-horizontal" } )
@@ -140,20 +199,21 @@ class TMO_fans( Site ):
 
         response = self.session.post(
             self.url, data=payload, headers={
-                "Referer": self.url,
+                "Referer": str( self.url ),
                 "Content-type": "application/x-www-form-urlencoded" } )
 
         if response.ok and response.url == self.url:
             raise Cannot_login
         else:
             self._login_ok = True
+        """
 
     def get_all_follow( self ):
         page_number = 0
         url = "https://tmofans.com/profile/follow"
         while( True ):
             page_number += 1
-            page = self.get( url, params={ "page": page_number } )
+            page = self.get( url=url, params={ "page": page_number } )
             soup = BeautifulSoup( page.content, 'html.parser' )
 
             links = self.get_manga_links( soup )
@@ -167,7 +227,7 @@ class TMO_fans( Site ):
         url = "https://tmofans.com/profile/pending"
         while( True ):
             page_number += 1
-            page = self.get( url, params={ "page": page_number } )
+            page = self.get( url=url, params={ "page": page_number } )
             soup = BeautifulSoup( page.content, 'html.parser' )
 
             links = self.get_manga_links( soup )
@@ -181,7 +241,7 @@ class TMO_fans( Site ):
         url = "https://tmofans.com/profile/read"
         while( True ):
             page_number += 1
-            page = self.get( url, params={ "page": page_number } )
+            page = self.get( url=url, params={ "page": page_number } )
             soup = BeautifulSoup( page.content, 'html.parser' )
 
             links = self.get_manga_links( soup )
