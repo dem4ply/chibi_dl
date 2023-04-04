@@ -77,6 +77,7 @@ class Site( Site_base ):
 
     @property
     def firefox( self ):
+        return super().browser
         if self.parent:
             return self.parent.firefox
         try:

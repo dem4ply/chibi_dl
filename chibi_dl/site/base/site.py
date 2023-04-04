@@ -1,3 +1,4 @@
+import copy
 import logging
 import time
 
@@ -10,6 +11,11 @@ from chibi_requests import Chibi_url
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
+
+from selenium.webdriver import DesiredCapabilities
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+import undetected_chromedriver as uc
 
 
 logger = logging.getLogger( "chibi_dl.sites.base.site" )
@@ -39,7 +45,7 @@ class Site:
         url.session = self.session
         return url
 
-    def build_url( self, url=None, params=None, **kw ):
+    def build_url( self, url=None, params=None, headers=None, **kw ):
         if url is None:
             url = self.url
         if isinstance( url, str ):
@@ -47,6 +53,9 @@ class Site:
         url.session = self.session
         if params:
             url = url + params
+        if headers:
+            headers = dict( **url.headers, **headers )
+            url._headers = headers
         return url
 
     def get( self, *args, url=None, delay=10, retries=0, max_retries=5, **kw ):
@@ -67,10 +76,16 @@ class Site:
             if retries > max_retries:
                 logger.error( "maximo numero de reintentos para {url}" )
                 raise Max_retries_reach( self, url )
-            logger.warning( (
-                f"status code :{response.status_code} url: {url} "
-                f"se reintentara en {delay}" ) )
-            time.sleep( delay )
+            if response.status_code == 429:
+                logger.warning( (
+                    f"status code :{response.status_code} url: {url} "
+                    f"se reintentara en 300" ) )
+                time.sleep( 300 )
+            else:
+                logger.warning( (
+                    f"status code :{response.status_code} url: {url} "
+                    f"se reintentara en {delay}" ) )
+                time.sleep( delay )
             return self.get(
                 *args, url=url, delay=delay, retries=retries + 1, **kw )
         return response
@@ -203,6 +218,21 @@ class Site:
             options = self.build_firefox_options()
             self._firefox = webdriver.Firefox( options=options )
             return self._firefox
+
+    @property
+    def browser( self ):
+        if self.parent:
+            return self.parent.browser
+        try:
+            return self._browser
+        except AttributeError:
+            options = Options()
+            desire_capabilities = DesiredCapabilities.CHROME
+            desire_capabilities[ 'pageLoadStrategy' ] = 'eager'
+            logger.info( "iniciando chrome" )
+            a = uc.Chrome( desired_capabilities=desire_capabilities )
+            self._browser = a
+            return self._browser
 
     def build_firefox_options( self ):
         options = Options()

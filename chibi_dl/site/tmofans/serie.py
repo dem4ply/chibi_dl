@@ -1,5 +1,6 @@
 import itertools
 import logging
+import time
 
 from bs4 import BeautifulSoup
 from chibi.file.temp import Chibi_temp_path
@@ -37,6 +38,10 @@ class Serie( Site ):
                     "descargar el episodio" )
                 continue
             episode.compress( serie_path, downlaod_folder )
+            logger.info(
+                'termino de descargar el episodio esperando '
+                '10 seguncods para el siguiente' )
+            time.sleep( 10 )
 
     @property
     def name( self ):
@@ -57,7 +62,6 @@ class Serie( Site ):
     def load_soup( self ):
         page = self.get( self.url, )
         soup = BeautifulSoup( page.content, 'html.parser' )
-        page.close()
         try:
             self._title = "".join(
                 soup.select( ".element-title.my-2" )[0].find_all(
@@ -94,7 +98,8 @@ class Serie( Site ):
                 fansub = links[0].text
                 title = chapter.find( "h4" ).a.text
                 url = links[0].find_next(
-                    "i", { "class": "fas fa-play fa-2x"} ).parent.get( 'href' )
+                    "span", { "class": "fas fa-play fa-2x"}
+                ).parent.get( 'href' )
 
                 self._episodes.append(
                     Episode.from_site(
