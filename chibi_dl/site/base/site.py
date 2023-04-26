@@ -5,7 +5,7 @@ import time
 import cfscrape
 import requests
 
-from .exceptions import Max_retries_reach
+from .exceptions import Max_retries_reach, Cannot_pass_cloud_flare
 from chibi_requests import Chibi_url
 
 from selenium import webdriver
@@ -22,9 +22,19 @@ logger = logging.getLogger( "chibi_dl.sites.base.site" )
 
 
 class Site:
-    def __init__( self, url, *args, parent=None, **kw ):
+    url = None
+    default_user_agent = (
+        'Mozilla/5.0 (Windows NT 6.1; WOW64) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) '
+        'Chrome/56.0.2924.87 Safari/537.36'
+    )
+
+    def __init__( self, url=None, *args, parent=None, **kw ):
+        if url is None:
+            url = self.url
         if not isinstance( url, Chibi_url ):
             url = Chibi_url( url.strip() )
+
         self.url = url
         self.enable_full_scan = False
 
@@ -34,6 +44,11 @@ class Site:
 
         for k, v in kw.items():
             setattr( self, k, v )
+
+        if self.default_user_agent:
+            self.user_agent = self.default_user_agent
+
+        self._cloud_flare_passed = False
 
     @property
     def domain( self ):
@@ -168,9 +183,9 @@ class Site:
         if hasattr( self, '_session' ) and not self.parent:
             logger.info( f"cerrando session de '{self!r}'" )
             self.session.close()
-        if hasattr( self, '_firefox' ):
-            logger.info( "cerrando firefox" )
-            self.firefox.quit()
+        if hasattr( self, '_browser' ):
+            logger.info( "cerrando el navegador" )
+            self.browser.quit()
 
     @property
     def session( self ):
@@ -193,13 +208,7 @@ class Site:
 
     def build_session( self ):
         self._session = requests.session()
-        self._session = cfscrape.create_scraper( self._session )
-        self._session.headers.update( {
-            'User-Agent':
-                'Mozilla/5.0 (Windows NT 6.1; WOW64) '
-                'AppleWebKit/537.36 (KHTML, like Gecko) '
-                'Chrome/56.0.2924.87 Safari/537.36',
-        } )
+        # self._session = cfscrape.create_scraper( self._session )
 
     def wait( self, seconds=1 ):
         time.sleep( seconds )
@@ -209,6 +218,8 @@ class Site:
 
     @property
     def firefox( self ):
+        return self.browser
+        """
         if hasattr( self, 'parent' ) and self.parent:
             return self.parent.firefox
         try:
@@ -218,6 +229,7 @@ class Site:
             options = self.build_firefox_options()
             self._firefox = webdriver.Firefox( options=options )
             return self._firefox
+        """
 
     @property
     def browser( self ):
@@ -290,3 +302,44 @@ class Site:
                 *args, delay=delay ** 2, retries=retries + 1, **kw )
         return response
     """
+
+    @property
+    def cloud_flare_passed( self ):
+        return (
+            self._cloud_flare_passed
+            or ( self.parent and self.parent.cloud_flared_passed ) )
+
+    @cloud_flare_passed.setter
+    def cloud_flare_passed( self, value ):
+        self._cloud_flare_passed = value
+        if self.parent:
+            self.cloud_flare_passed = value
+
+    def cross_cloud_flare( self, delay=2 ):
+        if not self.cloud_flare_passed:
+            logger.info( f"obteniendo {self.url} usando el navegador" )
+            self.browser.get( self.url )
+            logger.info( f"esperando {delay} segundos a que pase cloud flare" )
+            time.sleep( delay )
+
+            self.cookies = self.firefox.get_cookies()
+            self.user_agent = self.firefox.execute_script(
+                "return navigator.userAgent;" )
+
+            if self.get( url=self.url ).ok:
+                logger.info(
+                    "No se pudo usar requests con las cookies "
+                    "del navegador para pasar cloudflare" )
+                self.cloud_flare_passed = True
+            else:
+                raise Cannot_pass_cloud_flare
+
+    @property
+    def is_browser_open( self ):
+        parent = self.parent
+        while parent:
+            browser = hasattr( parent, '_browser' )
+            if browser:
+                return True
+            parent = parent.parent
+        return hasattr( self, '_browser' )

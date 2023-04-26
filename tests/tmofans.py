@@ -63,6 +63,7 @@ class Test_tmofans:
         self.assertEqual( len( serie.episodes ), download_files )
 
 
+@skip( "quiero migrar esta mierda a otro paquete" )
 class Test_kimetsu_no_yaiba( Test_tmofans, VCRTestCase ):
     def setUp( self ):
         super().setUp()

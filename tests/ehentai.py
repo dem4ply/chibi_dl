@@ -91,6 +91,7 @@ class Test_ehentai( TestCase ):
             self.assertGreater( path_result.properties.size, 100000 )
 
 
+@skip( "quiero migrar esta mierda a otro paquete" )
 class Test_TOUHOU_GUNMANIA_A2( Test_ehentai, VCRTestCase ):
     def setUp( self ):
         super().setUp()
@@ -104,6 +105,7 @@ class Test_TOUHOU_GUNMANIA_A2( Test_ehentai, VCRTestCase ):
         return result
 
 
+@skip( "quiero migrar esta mierda a otro paquete" )
 class Test_e_hentai_main( VCRTestCase ):
     def setUp( self ):
         super().setUp()

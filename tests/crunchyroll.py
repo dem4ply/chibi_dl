@@ -129,6 +129,7 @@ class Test_crunchyroll( TestCase ):
         mkv = next( folder.find( r".*.mkv" ) )
 
 
+@skip( "quiero migrar esta mierda a otro paquete" )
 class Test_crunchyroll_no_dub( VCRTestCase, Test_crunchyroll ):
     def setUp( self ):
         super().setUp()

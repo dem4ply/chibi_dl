@@ -65,7 +65,7 @@ class Serie( Site ):
         try:
             self._title = "".join(
                 soup.select( ".element-title.my-2" )[0].find_all(
-                    text=True, recursive=False ) ).strip()
+                    string=True, recursive=False ) ).strip()
             self.load_episodes( soup )
         except Exception as e:
             import pdb

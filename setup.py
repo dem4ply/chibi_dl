@@ -21,7 +21,7 @@ setup(
         'selenium>=3.141.0',
         'ffmpeg-python>=0.2.0', 'pymkv>=1.0.5', 'pycountry>=19.8.18',
         'cfscrape>=1.9.5', 'chibi-marshmallow>=0.0.1',
-        'undectected-chromedriver>=3.4.6',
+        'undetected-chromedriver>=3.4.6',
         #'natsort>=7.0.1'
     ],
     dependency_links = [],
