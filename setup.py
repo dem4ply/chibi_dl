@@ -17,7 +17,7 @@ setup(
     author_email='',
     packages=find_packages(),
     install_requires=[
-        'chibi>=0.7.7', 'm3u8>=0.3.12', "chibi_requests>=0.1.1",
+        'chibi>=0.11.10', 'm3u8>=0.3.12', "chibi_requests>=0.1.1",
         'selenium>=3.141.0',
         'ffmpeg-python>=0.2.0', 'pymkv>=1.0.5', 'pycountry>=19.8.18',
         'cfscrape>=1.9.5', 'chibi-marshmallow>=0.0.1',
