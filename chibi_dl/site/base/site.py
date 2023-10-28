@@ -73,10 +73,12 @@ class Site:
             url._headers = headers
         return url
 
-    def get( self, *args, url=None, delay=10, retries=0, max_retries=5, **kw ):
+    def get(
+            self, *args, url=None, delay=10, retries=0, max_retries=5,
+            verify=True, timeout=500, **kw ):
         url = self.build_url( url=url, **kw )
         try:
-            response = url.get()
+            response = url.get( verify=verify, timeout=timeout )
         except requests.ConnectionError:
             if retries > max_retries:
                 logger.exception( "maximo numero de reintentos para {url}" )
@@ -246,6 +248,13 @@ class Site:
             self._browser = a
             return self._browser
 
+    @property
+    def _has_browser_init( self ):
+        has_browser = hasattr( self, '_browser' )
+        if not has_browser and self.parent:
+            return self.parent._has_browser_init
+        return has_browser
+
     def build_firefox_options( self ):
         options = Options()
         options.headless = True
@@ -307,13 +316,13 @@ class Site:
     def cloud_flare_passed( self ):
         return (
             self._cloud_flare_passed
-            or ( self.parent and self.parent.cloud_flared_passed ) )
+            or ( self.parent and self.parent.cloud_flare_passed ) )
 
     @cloud_flare_passed.setter
     def cloud_flare_passed( self, value ):
         self._cloud_flare_passed = value
         if self.parent:
-            self.cloud_flare_passed = value
+            self.parent.cloud_flare_passed = value
 
     def cross_cloud_flare( self, delay=2 ):
         if not self.cloud_flare_passed:
@@ -328,7 +337,7 @@ class Site:
 
             if self.get( url=self.url ).ok:
                 logger.info(
-                    "No se pudo usar requests con las cookies "
+                    "se puede usar requests con las cookies "
                     "del navegador para pasar cloudflare" )
                 self.cloud_flare_passed = True
             else:
