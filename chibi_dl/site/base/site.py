@@ -2,7 +2,7 @@ import copy
 import logging
 import time
 
-import cfscrape
+#import cfscrape
 import requests
 
 from .exceptions import Max_retries_reach, Cannot_pass_cloud_flare

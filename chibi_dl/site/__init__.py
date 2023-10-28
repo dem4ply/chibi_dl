@@ -1,11 +1,7 @@
-from chibi_dl.site.crunchyroll import Crunchyroll
-from chibi_dl.site.tmofans import TMO_fans
-
-
 class Site:
     def __init__( self, user, password, **kw ):
-        self.crunchytoll = Crunchyroll( user=user, password=password, **kw )
-        self.tmo_fans = TMO_fans( user=user, password=password, **kw )
+        #self.crunchytoll = Crunchyroll( user=user, password=password, **kw )
+        #self.tmo_fans = TMO_fans( user=user, password=password, **kw )
         self._sites = [ self.crunchytoll, self.tmo_fans ]
 
     def append( self, *urls ):
