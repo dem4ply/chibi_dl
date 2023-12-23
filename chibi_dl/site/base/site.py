@@ -352,3 +352,14 @@ class Site:
                 return True
             parent = parent.parent
         return hasattr( self, '_browser' )
+
+    @property
+    def links( self ):
+        soup = self.soup
+        a = soup.find_all( 'a' )
+        for link in a:
+            href = link.get( 'href' )
+            if href.startswith( '/' ):
+                yield self.domain + href
+            else:
+                yield self.build_url( href )
