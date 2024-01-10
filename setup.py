@@ -9,7 +9,7 @@ README = open(os.path.join( here, 'README.rst' ) ).read()
 
 setup(
     name='chibi_dl',
-    version='0.1.2',
+    version='0.1.3',
     description='',
     long_description=README,
     license='',
