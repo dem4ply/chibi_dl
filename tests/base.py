@@ -18,6 +18,21 @@ class Test_base:
         links = list( self.site.links )
         self.assertTrue( self.site.links )
 
+    def test_without_domain_should_return_with_current( self ):
+        result = self.site.build_link( '/hello' )
+        expected = 'https://www.google.com/hello'
+        self.assertEqual( result, expected )
+
+    def test_with_domain_should_return_with_the_domain( self ):
+        result = self.site.build_link( '/hello', domain='https://other.com' )
+        expected = 'https://other.com/hello'
+        self.assertEqual( result, expected )
+
+    def test_if_the_url_have_domain_should_return_the_url( self ):
+        result = self.site.build_link( 'https://google.com/hello' )
+        expected = 'https://google.com/hello'
+        self.assertEqual( result, expected )
+
 
 class Test_google( Test_base, VCRTestCase ):
     def setUp( self ):
