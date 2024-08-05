@@ -2,7 +2,6 @@ import copy
 import logging
 import time
 
-#import cfscrape
 import requests
 
 from .exceptions import Max_retries_reach, Cannot_pass_cloud_flare
@@ -210,7 +209,6 @@ class Site:
 
     def build_session( self ):
         self._session = requests.session()
-        # self._session = cfscrape.create_scraper( self._session )
 
     def wait( self, seconds=1 ):
         time.sleep( seconds )
