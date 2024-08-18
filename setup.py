@@ -15,7 +15,7 @@ setup(
     license='',
     author='dem4ply',
     author_email='',
-    packages=find_packages(),
+    packages=find_packages(include=['chibi_dl', 'chibi_dl.*']),
     install_requires=[
         'chibi>=0.11.10', "chibi_requests>=0.1.1",
         'selenium>=3.141.0',
