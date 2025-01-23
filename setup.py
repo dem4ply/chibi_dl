@@ -18,7 +18,7 @@ setup(
     packages=find_packages(include=['chibi_dl', 'chibi_dl.*']),
     install_requires=[
         'chibi>=0.11.10', "chibi_requests>=0.1.1",
-        'selenium>=3.141.0',
+        'selenium>=3.141.0', 'undetected-chromedriver>=3.5.2'
     ],
     dependency_links = [],
     classifiers=[
