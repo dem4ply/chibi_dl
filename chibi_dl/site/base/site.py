@@ -350,3 +350,19 @@ class Site:
                 return True
             parent = parent.parent
         return hasattr( self, '_browser' )
+
+    def build_link( self, href, domain=None ):
+        if href.startswith( '/' ):
+            if not domain:
+                domain = self.domain
+            return domain + href
+        else:
+            return self.build_url( href )
+
+    @property
+    def links( self ):
+        soup = self.soup
+        a = soup.find_all( 'a' )
+        for link in a:
+            href = link.get( 'href' )
+            yield self.build_link( href )
